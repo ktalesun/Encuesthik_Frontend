@@ -8,9 +8,7 @@ interface LoginScreenProps {
   onLogin: () => void;
 }
 
-export default function LoginScreen({
-  onLogin,
-}: LoginScreenProps) {
+export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [isRegister, setIsRegister] = useState(false);
 
   return (
@@ -24,9 +22,7 @@ export default function LoginScreen({
             </div>
             <h1 className="text-4xl">Encues-Think</h1>
           </div>
-          <p className="text-slate-500">
-            Gestión de encuestas empresariales
-          </p>
+          <p className="text-slate-500">Gestión de encuestas empresariales</p>
         </div>
 
         {/* Form */}
@@ -34,31 +30,18 @@ export default function LoginScreen({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@empresa.com"
-              />
+              <Input id="email" type="email" placeholder="tu@empresa.com" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-              />
+              <Input id="password" type="password" placeholder="••••••••" />
             </div>
 
             {isRegister && (
               <div className="space-y-2">
-                <Label htmlFor="company">
-                  Nombre de empresa
-                </Label>
-                <Input
-                  id="company"
-                  placeholder="Mi Empresa S.A."
-                />
+                <Label htmlFor="company">Nombre de empresa</Label>
+                <Input id="company" placeholder="Mi Empresa S.A." />
               </div>
             )}
           </div>
