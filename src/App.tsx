@@ -1,62 +1,90 @@
-import React, { useState } from 'react';
-import LoginScreen from './components/LoginScreen';
-import DashboardScreen from './components/DashboardScreen';
-import SurveyEditorScreen from './components/SurveyEditorScreen';
-import ReportsScreen from './components/ReportsScreen';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './guards/ProtectedRoute';
+import PublicRoute from './guards/PublicRoute';
 
-type Screen = 'login' | 'dashboard' | 'editor' | 'reports';
+// Pages
+import DashboardScreen from './components/DashboardScreen';
+import LoginScreen from './components/LoginScreen';
+import PublicSurveyScreen from './components/PublicSurveyScreen';
+import ReportsScreen from './components/ReportsScreen';
+import SurveyEditorScreen from './components/SurveyEditorScreen';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedSurvey, setSelectedSurvey] = useState<any>(null);
+	return (
+		<BrowserRouter>
+			<AuthProvider>
+				<Routes>
+					{/* Public Routes */}
+					<Route
+						path="/login"
+						element={
+							<PublicRoute>
+								<LoginScreen />
+							</PublicRoute>
+						}
+					/>
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setCurrentScreen('dashboard');
-  };
+					{/* Public Survey Route (no authentication required) */}
+					<Route
+						path="/encuestas/public/:empresaId/:encuestaId"
+						element={<PublicSurveyScreen />}
+					/>
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentScreen('login');
-  };
+					{/* Protected Routes */}
+					<Route
+						path="/dashboard"
+						element={
+							<ProtectedRoute>
+								<DashboardScreen />
+							</ProtectedRoute>
+						}
+					/>
 
-  const handleCreateSurvey = () => {
-    setSelectedSurvey(null);
-    setCurrentScreen('editor');
-  };
+					<Route
+						path="/encuestas/nueva"
+						element={
+							<ProtectedRoute requiredPermiso="encuestas.crear">
+								<SurveyEditorScreen />
+							</ProtectedRoute>
+						}
+					/>
 
-  const handleEditSurvey = (survey: any) => {
-    setSelectedSurvey(survey);
-    setCurrentScreen('editor');
-  };
+					<Route
+						path="/encuestas/:id/editar"
+						element={
+							<ProtectedRoute requiredPermiso="encuestas.editar">
+								<SurveyEditorScreen />
+							</ProtectedRoute>
+						}
+					/>
 
-  const navigateTo = (screen: Screen) => {
-    setCurrentScreen(screen);
-  };
+					<Route
+						path="/reportes"
+						element={
+							<ProtectedRoute requiredPermiso="reportes.ver">
+								<ReportsScreen />
+							</ProtectedRoute>
+						}
+					/>
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {currentScreen === 'login' && (
-        <LoginScreen onLogin={handleLogin} />
-      )}
-      {currentScreen === 'dashboard' && (
-        <DashboardScreen 
-          onNavigate={navigateTo}
-          onCreateSurvey={handleCreateSurvey}
-          onEditSurvey={handleEditSurvey}
-          onLogout={handleLogout}
-        />
-      )}
-      {currentScreen === 'editor' && (
-        <SurveyEditorScreen 
-          onNavigate={navigateTo}
-          survey={selectedSurvey}
-        />
-      )}
-      {currentScreen === 'reports' && (
-        <ReportsScreen onNavigate={navigateTo} />
-      )}
-    </div>
-  );
+					{/* Redirect root to dashboard */}
+					<Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+					{/* 404 */}
+					<Route
+						path="*"
+						element={
+							<div className="min-h-screen flex items-center justify-center">
+								<div className="text-center">
+									<h1 className="text-4xl mb-4">404</h1>
+									<p className="text-slate-600">Página no encontrada</p>
+								</div>
+							</div>
+						}
+					/>
+				</Routes>
+			</AuthProvider>
+		</BrowserRouter>
+	);
 }
