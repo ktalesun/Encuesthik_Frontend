@@ -10,7 +10,7 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import encuestasService from '../services/encuestas.service';
 import respuestasService from '../services/respuestas.service';
-import { Encuesta, RespuestaItem } from '../types';
+import { Encuesta } from '../types';
 import { Button } from './ui/button';
 import {
 	Card,
