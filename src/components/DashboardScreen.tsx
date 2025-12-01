@@ -14,13 +14,16 @@ import {
 	Trash2,
 	Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useEncuestas } from '../hooks/useEncuestas';
 import { useUsuarios } from '../hooks/useUsuarios';
 import encuestasService from '../services/encuestas.service';
+import rolesService from '../services/roles.service';
+import usuariosService from '../services/usuarios.service';
+import { Rol } from '../types';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
@@ -31,11 +34,28 @@ import {
 	CardTitle,
 } from './ui/card';
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from './ui/dialog';
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from './ui/select';
 import { Switch } from './ui/switch';
 import {
 	Table,
@@ -51,8 +71,37 @@ export default function DashboardScreen() {
 	const navigate = useNavigate();
 	const { usuario, logout } = useAuth();
 	const { encuestas, isLoading: loadingEncuestas, refetch } = useEncuestas();
-	const { usuarios, isLoading: loadingUsuarios } = useUsuarios();
+	const {
+		usuarios,
+		isLoading: loadingUsuarios,
+		refetch: refetchUsuarios,
+	} = useUsuarios();
 	const [activeTab, setActiveTab] = useState('surveys');
+
+	// Estados para el diálogo de usuario
+	const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+	const [editingUserId, setEditingUserId] = useState<string | null>(null);
+	const [roles, setRoles] = useState<Rol[]>([]);
+	const [userForm, setUserForm] = useState({
+		nombre: '',
+		email: '',
+		password: '',
+		rol_id: '',
+	});
+	const [isSavingUser, setIsSavingUser] = useState(false);
+
+	// Cargar roles al montar el componente
+	useEffect(() => {
+		const fetchRoles = async () => {
+			try {
+				const data = await rolesService.listar();
+				setRoles(data);
+			} catch (error) {
+				console.error('Error al cargar roles:', error);
+			}
+		};
+		fetchRoles();
+	}, []);
 
 	const handleLogout = () => {
 		logout();
@@ -93,6 +142,120 @@ export default function DashboardScreen() {
 		const fullUrl = `${window.location.origin}${urlPublica}`;
 		navigator.clipboard.writeText(fullUrl);
 		toast.success('Enlace copiado al portapapeles');
+	};
+
+	// Funciones para gestión de usuarios
+	const handleOpenUserDialog = (userId?: string) => {
+		if (userId) {
+			const user = usuarios.find((u) => u.id_usuario === userId);
+			if (user) {
+				setEditingUserId(userId);
+				setUserForm({
+					nombre: user.nombre,
+					email: user.email,
+					password: '',
+					rol_id: user.rol_id,
+				});
+			}
+		} else {
+			setEditingUserId(null);
+			setUserForm({
+				nombre: '',
+				email: '',
+				password: '',
+				rol_id: '',
+			});
+		}
+		setIsUserDialogOpen(true);
+	};
+
+	const handleCloseUserDialog = () => {
+		setIsUserDialogOpen(false);
+		setEditingUserId(null);
+		setUserForm({
+			nombre: '',
+			email: '',
+			password: '',
+			rol_id: '',
+		});
+	};
+
+	const handleSaveUser = async () => {
+		if (!userForm.nombre || !userForm.email || !userForm.rol_id) {
+			toast.error('Por favor completa todos los campos obligatorios');
+			return;
+		}
+
+		if (!editingUserId && !userForm.password) {
+			toast.error('La contraseña es obligatoria para nuevos usuarios');
+			return;
+		}
+
+		try {
+			setIsSavingUser(true);
+
+			if (editingUserId) {
+				// Actualizar usuario existente
+				const updateData: any = {
+					nombre: userForm.nombre,
+					email: userForm.email,
+					rol_id: userForm.rol_id,
+				};
+
+				// Solo incluir password si se proporcionó uno nuevo
+				if (userForm.password) {
+					updateData.password = userForm.password;
+				}
+
+				await usuariosService.actualizar(editingUserId, updateData);
+				toast.success('Usuario actualizado exitosamente');
+			} else {
+				// Crear nuevo usuario
+				await usuariosService.crear({
+					nombre: userForm.nombre,
+					email: userForm.email,
+					password: userForm.password,
+					rol_id: userForm.rol_id,
+					empresa_id: usuario?.empresa?.id || '',
+				});
+				toast.success('Usuario creado exitosamente');
+			}
+
+			refetchUsuarios();
+			handleCloseUserDialog();
+		} catch (error: any) {
+			toast.error(error.message || 'Error al guardar usuario');
+		} finally {
+			setIsSavingUser(false);
+		}
+	};
+
+	const handleToggleUserStatus = async (
+		userId: string,
+		currentStatus: string
+	) => {
+		try {
+			const newStatus = currentStatus === 'activo' ? 'inactivo' : 'activo';
+			await usuariosService.actualizarEstado(userId, newStatus);
+			toast.success(
+				`Usuario ${newStatus === 'activo' ? 'activado' : 'desactivado'} exitosamente`
+			);
+			refetchUsuarios();
+		} catch (error: any) {
+			toast.error(error.message || 'Error al cambiar estado del usuario');
+		}
+	};
+
+	const handleDeleteUser = async (userId: string, nombre: string) => {
+		if (!confirm(`¿Estás seguro de eliminar al usuario "${nombre}"?`)) return;
+
+		try {
+			await usuariosService.eliminar(userId);
+			toast.success('Usuario eliminado exitosamente');
+			refetchUsuarios();
+		} catch (error: any) {
+			toast.error(error.message || 'Error al eliminar usuario');
+		}
 	};
 
 	// Estadísticas calculadas
@@ -207,7 +370,7 @@ export default function DashboardScreen() {
 								</>
 							)}
 							{activeTab === 'users' && (
-								<Button>
+								<Button onClick={() => handleOpenUserDialog()}>
 									<Plus className="w-4 h-4 mr-2" />
 									Agregar Usuario
 								</Button>
@@ -369,16 +532,36 @@ export default function DashboardScreen() {
 													</TableCell>
 													<TableCell>
 														<div className="flex items-center gap-2">
-															<Switch checked={user.estado === 'activo'} />
+															<Switch
+																checked={user.estado === 'activo'}
+																onCheckedChange={() =>
+																	handleToggleUserStatus(
+																		user.id_usuario,
+																		user.estado
+																	)
+																}
+															/>
 															<span>{user.estado}</span>
 														</div>
 													</TableCell>
 													<TableCell>
 														<div className="flex gap-2">
-															<Button variant="outline" size="sm">
+															<Button
+																variant="outline"
+																size="sm"
+																onClick={() =>
+																	handleOpenUserDialog(user.id_usuario)
+																}
+															>
 																<Edit className="w-4 h-4" />
 															</Button>
-															<Button variant="outline" size="sm">
+															<Button
+																variant="outline"
+																size="sm"
+																onClick={() =>
+																	handleDeleteUser(user.id_usuario, user.nombre)
+																}
+															>
 																<Trash2 className="w-4 h-4" />
 															</Button>
 														</div>
@@ -393,6 +576,104 @@ export default function DashboardScreen() {
 					</TabsContent>
 				</Tabs>
 			</div>
+
+			{/* Diálogo para Agregar/Editar Usuario */}
+			<Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingUserId ? 'Editar Usuario' : 'Agregar Nuevo Usuario'}
+						</DialogTitle>
+						<DialogDescription>
+							{editingUserId
+								? 'Actualiza la información del usuario'
+								: 'Completa los datos para crear un nuevo usuario'}
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="nombre">Nombre Completo *</Label>
+							<Input
+								id="nombre"
+								placeholder="Juan Pérez"
+								value={userForm.nombre}
+								onChange={(e) =>
+									setUserForm({ ...userForm, nombre: e.target.value })
+								}
+							/>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="email">Correo Electrónico *</Label>
+							<Input
+								id="email"
+								type="email"
+								placeholder="juan@empresa.com"
+								value={userForm.email}
+								onChange={(e) =>
+									setUserForm({ ...userForm, email: e.target.value })
+								}
+							/>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="password">
+								Contraseña{' '}
+								{editingUserId ? '(dejar vacío para no cambiar)' : '*'}
+							</Label>
+							<Input
+								id="password"
+								type="password"
+								placeholder={
+									editingUserId ? 'Nueva contraseña' : 'Contraseña segura'
+								}
+								value={userForm.password}
+								onChange={(e) =>
+									setUserForm({ ...userForm, password: e.target.value })
+								}
+							/>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="rol">Rol *</Label>
+							<Select
+								value={userForm.rol_id}
+								onValueChange={(value) =>
+									setUserForm({ ...userForm, rol_id: value })
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Selecciona un rol" />
+								</SelectTrigger>
+								<SelectContent>
+									{roles.map((rol) => (
+										<SelectItem key={rol.id_rol} value={rol.id_rol}>
+											{rol.nombre}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button variant="outline" onClick={handleCloseUserDialog}>
+							Cancelar
+						</Button>
+						<Button onClick={handleSaveUser} disabled={isSavingUser}>
+							{isSavingUser ? (
+								<>
+									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+									Guardando...
+								</>
+							) : (
+								<>{editingUserId ? 'Actualizar' : 'Crear'} Usuario</>
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
