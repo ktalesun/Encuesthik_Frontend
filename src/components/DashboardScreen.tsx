@@ -10,7 +10,6 @@ import {
 	LogOut,
 	MessageSquare,
 	Plus,
-	Settings,
 	Trash2,
 	Users,
 } from 'lucide-react';
@@ -301,10 +300,6 @@ export default function DashboardScreen() {
 							</div>
 						</div>
 						<div className="flex items-center gap-3">
-							<Button variant="outline" size="sm">
-								<Settings className="w-4 h-4 mr-2" />
-								Configuración
-							</Button>
 							<Button variant="outline" size="sm" onClick={handleLogout}>
 								<LogOut className="w-4 h-4 mr-2" />
 								Salir
@@ -340,15 +335,26 @@ export default function DashboardScreen() {
 							</div>
 						</CardContent>
 					</Card>
-					<Card>
+					<Card
+						className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-purple-200 bg-gradient-to-br from-purple-50 to-white"
+						onClick={() => navigate('/reportes')}
+					>
 						<CardHeader className="pb-3">
-							<CardDescription>Respuestas Totales</CardDescription>
+							<CardDescription className="flex items-center justify-between">
+								<span>Respuestas Totales</span>
+								<BarChart3 className="w-4 h-4 text-purple-600" />
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className="flex items-center justify-between">
-								<div className="text-3xl">-</div>
+								<div className="text-3xl font-bold text-purple-600">
+									Ver Reportes
+								</div>
 								<MessageSquare className="w-8 h-8 text-purple-600" />
 							</div>
+							<p className="text-sm text-purple-600 mt-2 font-medium">
+								Click para ver estadísticas →
+							</p>
 						</CardContent>
 					</Card>
 					<Card>

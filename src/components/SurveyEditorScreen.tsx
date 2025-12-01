@@ -2,11 +2,9 @@ import {
 	ArrowLeft,
 	Eye,
 	GripVertical,
-	Link2,
 	Loader2,
 	MessageSquare,
 	Plus,
-	QrCode,
 	Save,
 	Trash2,
 } from 'lucide-react';
@@ -520,40 +518,6 @@ export default function SurveyEditorScreen() {
 								</p>
 							</CardContent>
 						</Card>
-
-						{/* Links & QR */}
-						<Card>
-							<CardHeader>
-								<CardTitle>Enlaces y Compartir</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								<Button
-									variant="outline"
-									className="w-full justify-start"
-									disabled
-								>
-									<Link2 className="w-4 h-4 mr-2" />
-									Generar Enlace Largo
-								</Button>
-								<Button
-									variant="outline"
-									className="w-full justify-start"
-									disabled
-								>
-									<Link2 className="w-4 h-4 mr-2" />
-									Generar Enlace Corto
-								</Button>
-								<Button
-									variant="outline"
-									className="w-full justify-start"
-									disabled
-								>
-									<QrCode className="w-4 h-4 mr-2" />
-									Generar Código QR
-								</Button>
-							</CardContent>
-						</Card>
-
 						{/* Quick Stats */}
 						<Card>
 							<CardHeader>

@@ -1,9 +1,14 @@
 import {
 	ArrowLeft,
+	BarChart3,
+	Calendar,
+	ClipboardList,
 	FileSpreadsheet,
 	FileText,
 	Filter,
 	Loader2,
+	MessageSquare,
+	RefreshCw,
 	TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -20,6 +25,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from './ui/card';
+import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import {
@@ -44,23 +50,32 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 export default function ReportsScreen() {
 	const navigate = useNavigate();
 	const { encuestas } = useEncuestas();
-	const [selectedEncuesta, setSelectedEncuesta] = useState<string>('all');
+	const [selectedEncuesta, setSelectedEncuesta] = useState<string>('ALL');
+	const [fechaInicio, setFechaInicio] = useState<string>('');
+	const [fechaFin, setFechaFin] = useState<string>('');
 
-	const { estadisticas, isLoading } = useReportes(
-		selectedEncuesta && selectedEncuesta !== 'all'
-			? { encuesta_id: selectedEncuesta }
-			: undefined
+	const filtros = {
+		...(selectedEncuesta &&
+			selectedEncuesta !== 'ALL' && { encuesta_id: selectedEncuesta }),
+		...(fechaInicio && { fecha_inicio: fechaInicio }),
+		...(fechaFin && { fecha_fin: fechaFin }),
+	};
+
+	const { estadisticas, isLoading, error, refetch } = useReportes(
+		Object.keys(filtros).length > 0 ? filtros : undefined
 	);
 
-	// Debug: ver qué datos estamos recibiendo
-	console.log('Estadísticas recibidas:', estadisticas);
+	// Limpiar logs de debug
+	// console.log('Estadísticas recibidas:', estadisticas);
 
 	const handleExportExcel = async () => {
+		if (estadisticas.length === 0) {
+			toast.error('No hay datos para exportar');
+			return;
+		}
 		try {
 			const blob = await reportesService.exportarExcel(
-				selectedEncuesta && selectedEncuesta !== 'all'
-					? { encuesta_id: selectedEncuesta }
-					: undefined
+				Object.keys(filtros).length > 0 ? filtros : undefined
 			);
 			const fecha = new Date().toISOString().split('T')[0];
 			reportesService.descargarArchivo(blob, `reporte_${fecha}.xlsx`);
@@ -71,11 +86,13 @@ export default function ReportsScreen() {
 	};
 
 	const handleExportPDF = async () => {
+		if (estadisticas.length === 0) {
+			toast.error('No hay datos para exportar');
+			return;
+		}
 		try {
 			const blob = await reportesService.exportarPDF(
-				selectedEncuesta && selectedEncuesta !== 'all'
-					? { encuesta_id: selectedEncuesta }
-					: undefined
+				Object.keys(filtros).length > 0 ? filtros : undefined
 			);
 			const fecha = new Date().toISOString().split('T')[0];
 			reportesService.descargarArchivo(blob, `reporte_${fecha}.pdf`);
@@ -85,10 +102,20 @@ export default function ReportsScreen() {
 		}
 	};
 
-	const encuestaActual =
-		estadisticas && estadisticas.length > 0 ? estadisticas[0] : null;
+	const handleClearFilters = () => {
+		setSelectedEncuesta('ALL');
+		setFechaInicio('');
+		setFechaFin('');
+	};
 
-	console.log('Encuesta actual:', encuestaActual);
+	const totalRespuestas = estadisticas.reduce(
+		(sum, enc) => sum + enc.total_respuestas,
+		0
+	);
+	const totalPreguntas = estadisticas.reduce(
+		(sum, enc) => sum + enc.preguntas.length,
+		0
+	);
 
 	return (
 		<div className="min-h-screen bg-slate-50">
@@ -113,7 +140,7 @@ export default function ReportsScreen() {
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				{/* Filters */}
+				{/* Filtros */}
 				<Card className="mb-8">
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
@@ -123,6 +150,7 @@ export default function ReportsScreen() {
 					</CardHeader>
 					<CardContent>
 						<div className="grid md:grid-cols-3 gap-4">
+							{/* Filtro por encuesta */}
 							<div className="space-y-2">
 								<Label>Encuesta</Label>
 								<Select
@@ -130,10 +158,10 @@ export default function ReportsScreen() {
 									onValueChange={setSelectedEncuesta}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder="Selecciona una encuesta" />
+										<SelectValue placeholder="Todas las encuestas" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="all">Todas las encuestas</SelectItem>
+										<SelectItem value="ALL">Todas las encuestas</SelectItem>
 										{encuestas.map((enc) => (
 											<SelectItem key={enc.id_encuesta} value={enc.id_encuesta}>
 												{enc.titulo}
@@ -142,192 +170,283 @@ export default function ReportsScreen() {
 									</SelectContent>
 								</Select>
 							</div>
-							<div className="space-y-2 md:col-span-2">
-								<Label>Exportar Resultados</Label>
-								<div className="flex gap-2">
-									<Button
-										variant="outline"
-										className="flex-1"
-										onClick={handleExportExcel}
-									>
-										<FileSpreadsheet className="w-4 h-4 mr-2" />
-										Excel
-									</Button>
-									<Button
-										variant="outline"
-										className="flex-1"
-										onClick={handleExportPDF}
-									>
-										<FileText className="w-4 h-4 mr-2" />
-										PDF
-									</Button>
-								</div>
+
+							{/* Filtro por fecha inicio */}
+							<div className="space-y-2">
+								<Label className="flex items-center gap-2">
+									<Calendar className="h-4 w-4" />
+									Fecha Inicio
+								</Label>
+								<Input
+									type="date"
+									value={fechaInicio}
+									onChange={(e) => setFechaInicio(e.target.value)}
+									placeholder="Desde..."
+								/>
 							</div>
+
+							{/* Filtro por fecha fin */}
+							<div className="space-y-2">
+								<Label className="flex items-center gap-2">
+									<Calendar className="h-4 w-4" />
+									Fecha Fin
+								</Label>
+								<Input
+									type="date"
+									value={fechaFin}
+									onChange={(e) => setFechaFin(e.target.value)}
+									placeholder="Hasta..."
+								/>
+							</div>
+						</div>
+
+						{/* Acciones de filtros */}
+						<div className="mt-4 flex gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleClearFilters}
+								disabled={
+									selectedEncuesta === 'ALL' && !fechaInicio && !fechaFin
+								}
+							>
+								Limpiar filtros
+							</Button>
+							<Button variant="outline" size="sm" onClick={() => refetch()}>
+								<RefreshCw className="h-4 w-4 mr-2" />
+								Actualizar
+							</Button>
 						</div>
 					</CardContent>
 				</Card>
+
+				{/* Botones de exportación */}
+				<div className="mb-8 flex gap-3 justify-end">
+					<Button
+						variant="outline"
+						onClick={handleExportExcel}
+						disabled={isLoading || estadisticas.length === 0}
+					>
+						<FileSpreadsheet className="w-4 h-4 mr-2" />
+						Exportar Excel
+					</Button>
+					<Button
+						variant="outline"
+						onClick={handleExportPDF}
+						disabled={isLoading || estadisticas.length === 0}
+					>
+						<FileText className="w-4 h-4 mr-2" />
+						Exportar PDF
+					</Button>
+				</div>
 
 				{isLoading ? (
 					<div className="flex items-center justify-center py-12">
 						<Loader2 className="w-8 h-8 animate-spin text-blue-600" />
 					</div>
-				) : !encuestaActual ? (
+				) : error ? (
+					<Card>
+						<CardContent className="py-12 text-center">
+							<h3 className="text-lg mb-2 text-red-600">
+								Error al cargar datos
+							</h3>
+							<p className="text-slate-600 mb-4">{error.message}</p>
+							<Button onClick={() => refetch()}>
+								<RefreshCw className="h-4 w-4 mr-2" />
+								Reintentar
+							</Button>
+						</CardContent>
+					</Card>
+				) : estadisticas.length === 0 ? (
 					<Card>
 						<CardContent className="py-12 text-center">
 							<h3 className="text-lg mb-2">No hay datos disponibles</h3>
 							<p className="text-slate-600">
-								Selecciona una encuesta o espera a que haya respuestas
+								{selectedEncuesta !== 'ALL' || fechaInicio || fechaFin
+									? 'No hay respuestas con los filtros seleccionados'
+									: 'Selecciona filtros o espera a que haya respuestas'}
 							</p>
 						</CardContent>
 					</Card>
 				) : (
 					<>
-						{/* Summary Cards */}
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-							<Card>
+						{/* Resumen Global */}
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+							<Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
 								<CardHeader className="pb-3">
-									<CardDescription>Total Respuestas</CardDescription>
+									<CardDescription className="flex items-center gap-2">
+										<MessageSquare className="h-4 w-4 text-blue-600" />
+										Respuestas Totales
+									</CardDescription>
 								</CardHeader>
 								<CardContent>
-									<div className="text-3xl">
-										{encuestaActual.total_respuestas}
+									<div className="text-4xl font-bold text-blue-600">
+										{totalRespuestas}
 									</div>
-									<div className="flex items-center gap-1 mt-2 text-green-600">
+									<div className="flex items-center gap-1 mt-2 text-blue-600">
 										<TrendingUp className="w-4 h-4" />
-										<span>Activa</span>
+										<span className="text-sm font-medium">
+											{estadisticas.length}{' '}
+											{estadisticas.length === 1 ? 'encuesta' : 'encuestas'}
+										</span>
 									</div>
 								</CardContent>
 							</Card>
-							<Card>
+
+							<Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
 								<CardHeader className="pb-3">
-									<CardDescription>Tasa de Finalización</CardDescription>
+									<CardDescription className="flex items-center gap-2">
+										<ClipboardList className="h-4 w-4 text-purple-600" />
+										Total Preguntas
+									</CardDescription>
 								</CardHeader>
 								<CardContent>
-									<div className="text-3xl">-</div>
-									<Progress value={0} className="mt-2" />
-								</CardContent>
-							</Card>
-							<Card>
-								<CardHeader className="pb-3">
-									<CardDescription>Tiempo Promedio</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<div className="text-3xl">-</div>
-									<p className="text-slate-600 mt-2">Por respuesta</p>
-								</CardContent>
-							</Card>
-							<Card>
-								<CardHeader className="pb-3">
-									<CardDescription>Preguntas</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<div className="text-3xl">
-										{encuestaActual.preguntas.length}
+									<div className="text-4xl font-bold text-purple-600">
+										{totalPreguntas}
 									</div>
-									<p className="text-slate-600 mt-2">Total</p>
+									<p className="text-purple-600 mt-2 text-sm font-medium">
+										En todas las encuestas
+									</p>
+								</CardContent>
+							</Card>
+
+							<Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
+								<CardHeader className="pb-3">
+									<CardDescription className="flex items-center gap-2">
+										<BarChart3 className="h-4 w-4 text-green-600" />
+										Promedio por Encuesta
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<div className="text-4xl font-bold text-green-600">
+										{estadisticas.length > 0
+											? Math.round(totalRespuestas / estadisticas.length)
+											: 0}
+									</div>
+									<p className="text-green-600 mt-2 text-sm font-medium">
+										Respuestas/encuesta
+									</p>
 								</CardContent>
 							</Card>
 						</div>
 
-						{/* Detailed Results */}
-						<Card>
-							<CardHeader>
-								<CardTitle>
-									Resultados Detallados - {encuestaActual.titulo}
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-8">
-									{encuestaActual.preguntas.map((pregunta, index) => {
-										console.log(`Pregunta ${index + 1}:`, pregunta);
-										return (
-											<div key={pregunta.pregunta_id}>
-												<h3 className="mb-4">
-													{index + 1}. {pregunta.pregunta_texto}
-												</h3>
+						{/* Resumen por encuesta */}
+						{estadisticas.map((encuesta) => (
+							<div key={encuesta.encuesta_id} className="mb-8">
+								<h2 className="text-xl font-semibold mb-4">
+									{encuesta.encuesta_titulo}
+								</h2>
 
-												{pregunta.respuestas &&
-												pregunta.respuestas.length > 0 ? (
-													<Table>
-														<TableHeader>
-															<TableRow>
-																<TableHead>Opción</TableHead>
-																<TableHead>Respuestas</TableHead>
-																<TableHead>Porcentaje</TableHead>
-																<TableHead>Visualización</TableHead>
-															</TableRow>
-														</TableHeader>
-														<TableBody>
-															{pregunta.respuestas.map((resp, respIndex) => (
-																<TableRow key={respIndex}>
-																	<TableCell>
-																		<div className="flex items-center gap-2">
-																			<div
-																				className="w-3 h-3 rounded-full"
-																				style={{
-																					backgroundColor:
-																						COLORS[respIndex % COLORS.length],
-																				}}
-																			/>
-																			{resp.valor}
-																		</div>
-																	</TableCell>
-																	<TableCell>{resp.frecuencia}</TableCell>
-																	<TableCell>
-																		{resp.porcentaje.toFixed(1)}%
-																	</TableCell>
-																	<TableCell className="w-1/3">
-																		<Progress value={resp.porcentaje} />
-																	</TableCell>
-																</TableRow>
-															))}
-														</TableBody>
-													</Table>
-												) : (
-													<p className="text-slate-500 italic">
-														No hay respuestas para esta pregunta
-													</p>
-												)}
-
-												{index < encuestaActual.preguntas.length - 1 && (
-													<Separator className="mt-8" />
-												)}
+								{/* Tarjetas de resumen */}
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+									<Card>
+										<CardHeader className="pb-3">
+											<CardDescription>Total Respuestas</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className="text-3xl font-bold">
+												{encuesta.total_respuestas}
 											</div>
-										);
-									})}
+											<div className="flex items-center gap-1 mt-2 text-green-600">
+												<TrendingUp className="w-4 h-4" />
+												<span className="text-sm">Recibidas</span>
+											</div>
+										</CardContent>
+									</Card>
+									<Card>
+										<CardHeader className="pb-3">
+											<CardDescription>Preguntas</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className="text-3xl font-bold">
+												{encuesta.preguntas.length}
+											</div>
+											<p className="text-slate-600 mt-2 text-sm">
+												En la encuesta
+											</p>
+										</CardContent>
+									</Card>
+									<Card>
+										<CardHeader className="pb-3">
+											<CardDescription>Estado</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className="text-lg font-semibold capitalize">
+												{encuesta.encuesta_estado || 'N/A'}
+											</div>
+											<p className="text-slate-600 mt-2 text-sm">Actual</p>
+										</CardContent>
+									</Card>
 								</div>
-							</CardContent>
-						</Card>
 
-						{/* Export Options */}
-						<Card className="mt-8">
-							<CardHeader>
-								<CardTitle>Opciones de Exportación</CardTitle>
-								<CardDescription>
-									Descarga los resultados en diferentes formatos
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className="grid md:grid-cols-2 gap-4">
-									<Button
-										variant="outline"
-										className="h-20 flex-col gap-2"
-										onClick={handleExportExcel}
-									>
-										<FileSpreadsheet className="w-6 h-6" />
-										<span>Exportar a Excel</span>
-									</Button>
-									<Button
-										variant="outline"
-										className="h-20 flex-col gap-2"
-										onClick={handleExportPDF}
-									>
-										<FileText className="w-6 h-6" />
-										<span>Exportar a PDF</span>
-									</Button>
-								</div>
-							</CardContent>
-						</Card>
+								{/* Detalles por pregunta */}
+								<Card>
+									<CardHeader>
+										<CardTitle>Resultados Detallados</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<div className="space-y-8">
+											{encuesta.preguntas.map((pregunta, index) => (
+												<div key={pregunta.pregunta_id}>
+													<h3 className="font-medium mb-4">
+														{index + 1}. {pregunta.pregunta_texto}
+													</h3>
+
+													{pregunta.respuestas &&
+													pregunta.respuestas.length > 0 ? (
+														<Table>
+															<TableHeader>
+																<TableRow>
+																	<TableHead>Opción</TableHead>
+																	<TableHead>Respuestas</TableHead>
+																	<TableHead>Porcentaje</TableHead>
+																	<TableHead>Visualización</TableHead>
+																</TableRow>
+															</TableHeader>
+															<TableBody>
+																{pregunta.respuestas.map((resp, respIndex) => (
+																	<TableRow key={respIndex}>
+																		<TableCell>
+																			<div className="flex items-center gap-2">
+																				<div
+																					className="w-3 h-3 rounded-full"
+																					style={{
+																						backgroundColor:
+																							COLORS[respIndex % COLORS.length],
+																					}}
+																				/>
+																				{resp.valor}
+																			</div>
+																		</TableCell>
+																		<TableCell className="font-medium">
+																			{resp.frecuencia}
+																		</TableCell>
+																		<TableCell>
+																			{resp.porcentaje.toFixed(1)}%
+																		</TableCell>
+																		<TableCell className="w-1/3">
+																			<Progress value={resp.porcentaje} />
+																		</TableCell>
+																	</TableRow>
+																))}
+															</TableBody>
+														</Table>
+													) : (
+														<p className="text-slate-500 italic">
+															No hay respuestas para esta pregunta
+														</p>
+													)}
+
+													{index < encuesta.preguntas.length - 1 && (
+														<Separator className="mt-8" />
+													)}
+												</div>
+											))}
+										</div>
+									</CardContent>
+								</Card>
+							</div>
+						))}
 					</>
 				)}
 			</div>
