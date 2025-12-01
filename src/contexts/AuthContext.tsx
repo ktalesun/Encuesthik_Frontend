@@ -51,8 +51,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	const hasPermiso = (permiso: string): boolean => {
-		if (!usuario || !usuario.rol) return false;
-		return usuario.rol.permisos.includes(permiso);
+		if (!usuario || !usuario.rol) {
+			return false;
+		}
+
+		const permisos = usuario.rol.permisos;
+
+		// Verificar permiso exacto
+		if (permisos.includes(permiso)) {
+			return true;
+		}
+
+		// Verificar wildcards (ej: "encuestas.*" cubre "encuestas.crear")
+		const tieneWildcard = permisos.some((p) => {
+			if (p.endsWith('.*')) {
+				const base = p.slice(0, -2); // Remover ".*"
+				return permiso.startsWith(base + '.');
+			}
+			return false;
+		});
+
+		return tieneWildcard;
 	};
 
 	const value: AuthContextType = {

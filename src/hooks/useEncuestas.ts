@@ -29,11 +29,15 @@ export const useEncuestas = () => {
 
 export const useEncuesta = (id: string | undefined) => {
 	const [encuesta, setEncuesta] = useState<Encuesta | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!id) return;
+		if (!id) {
+			setIsLoading(false);
+			setEncuesta(null);
+			return;
+		}
 
 		const fetchEncuesta = async () => {
 			try {

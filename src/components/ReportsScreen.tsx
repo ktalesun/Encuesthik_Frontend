@@ -44,16 +44,20 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 export default function ReportsScreen() {
 	const navigate = useNavigate();
 	const { encuestas } = useEncuestas();
-	const [selectedEncuesta, setSelectedEncuesta] = useState<string>('');
+	const [selectedEncuesta, setSelectedEncuesta] = useState<string>('all');
 
 	const { estadisticas, isLoading } = useReportes(
-		selectedEncuesta ? { encuesta_id: selectedEncuesta } : undefined
+		selectedEncuesta && selectedEncuesta !== 'all'
+			? { encuesta_id: selectedEncuesta }
+			: undefined
 	);
 
 	const handleExportExcel = async () => {
 		try {
 			const blob = await reportesService.exportarExcel(
-				selectedEncuesta ? { encuesta_id: selectedEncuesta } : undefined
+				selectedEncuesta && selectedEncuesta !== 'all'
+					? { encuesta_id: selectedEncuesta }
+					: undefined
 			);
 			const fecha = new Date().toISOString().split('T')[0];
 			reportesService.descargarArchivo(blob, `reporte_${fecha}.xlsx`);
@@ -66,7 +70,9 @@ export default function ReportsScreen() {
 	const handleExportPDF = async () => {
 		try {
 			const blob = await reportesService.exportarPDF(
-				selectedEncuesta ? { encuesta_id: selectedEncuesta } : undefined
+				selectedEncuesta && selectedEncuesta !== 'all'
+					? { encuesta_id: selectedEncuesta }
+					: undefined
 			);
 			const fecha = new Date().toISOString().split('T')[0];
 			reportesService.descargarArchivo(blob, `reporte_${fecha}.pdf`);
@@ -122,7 +128,7 @@ export default function ReportsScreen() {
 										<SelectValue placeholder="Selecciona una encuesta" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">Todas las encuestas</SelectItem>
+										<SelectItem value="all">Todas las encuestas</SelectItem>
 										{encuestas.map((enc) => (
 											<SelectItem key={enc.id_encuesta} value={enc.id_encuesta}>
 												{enc.titulo}

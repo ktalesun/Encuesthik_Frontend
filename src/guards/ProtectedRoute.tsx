@@ -31,10 +31,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	if (requiredPermiso && !hasPermiso(requiredPermiso)) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
-				<div className="text-center">
+				<div className="text-center max-w-md">
 					<h2 className="text-2xl mb-2">Sin Permisos</h2>
-					<p className="text-slate-600">
+					<p className="text-slate-600 mb-4">
 						No tienes permisos para acceder a esta página
+					</p>
+					<p className="text-sm text-slate-500">
+						Permiso requerido:{' '}
+						<code className="bg-slate-100 px-2 py-1 rounded">
+							{requiredPermiso}
+						</code>
 					</p>
 				</div>
 			</div>

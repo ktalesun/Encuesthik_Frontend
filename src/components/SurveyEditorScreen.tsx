@@ -170,20 +170,32 @@ export default function SurveyEditorScreen() {
 				toast.success('Encuesta actualizada exitosamente');
 			} else {
 				// Crear nueva encuesta
-				// Nota: necesitamos el empresa_id del usuario autenticado
 				const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+				if (!usuario.empresa?.id) {
+					toast.error('No se pudo obtener la información de la empresa');
+					return;
+				}
+
+				console.log('Creando encuesta con datos:', {
+					titulo,
+					descripcion,
+					fecha_inicio: fechaInicio,
+					fecha_fin: fechaFin,
+					empresa_id: usuario.empresa.id,
+					preguntas: preguntasAPI,
+				});
 
 				await encuestasService.crear({
 					titulo,
 					descripcion,
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
-					empresa_id: usuario.empresa_id,
+					empresa_id: usuario.empresa.id,
 					preguntas: preguntasAPI,
 				});
 				toast.success('Encuesta creada exitosamente');
 			}
-
 			navigate('/dashboard');
 		} catch (error: any) {
 			toast.error(error.message || 'Error al guardar la encuesta');
