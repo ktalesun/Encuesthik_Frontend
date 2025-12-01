@@ -98,7 +98,7 @@ export interface DatosTercero {
 export interface Respuesta {
 	id_respuesta: string;
 	encuesta_id: string;
-	respuestas_json: Record<string, any>; // Objeto con pregunta_id como clave
+	respuestas_json: Record<string, any>; // El backend almacena como objeto JSON
 	datos_tercero?: DatosTercero;
 	created_at: string;
 }
@@ -225,7 +225,7 @@ export interface UpdateEncuestaRequest {
 
 export interface CreateRespuestaRequest {
 	encuesta_id: string;
-	respuestas_json: Record<string, any>; // Objeto con pregunta_id como clave
+	respuestas_json: Record<string, any>; // Objeto con pregunta_id como clave y valor de respuesta
 	datos_tercero?: DatosTercero;
 }
 
