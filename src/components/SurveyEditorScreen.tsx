@@ -51,6 +51,9 @@ export default function SurveyEditorScreen() {
 	const [descripcion, setDescripcion] = useState('');
 	const [fechaInicio, setFechaInicio] = useState('');
 	const [fechaFin, setFechaFin] = useState('');
+	const [estado, setEstado] = useState<
+		'borrador' | 'publicada' | 'inactiva' | 'archivada'
+	>('borrador');
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -61,6 +64,7 @@ export default function SurveyEditorScreen() {
 			setDescripcion(encuesta.descripcion);
 			setFechaInicio(encuesta.fecha_inicio.split('T')[0]);
 			setFechaFin(encuesta.fecha_fin.split('T')[0]);
+			setEstado(encuesta.estado);
 
 			if (encuesta.preguntas) {
 				const mappedQuestions = encuesta.preguntas.map((p) => ({
@@ -129,27 +133,25 @@ export default function SurveyEditorScreen() {
 		try {
 			setIsSaving(true);
 
-			// Mapear preguntas al formato de la API
-			const preguntasAPI = questions.map((q, index) => {
-				let tipo: TipoPregunta = 'texto';
+			// Mapear preguntas al formato de la API (sin requerida ni orden)
+			const preguntasAPI = questions.map((q) => {
+				const tipo = q.type as TipoPregunta;
 
-				if (q.type === 'multiple-choice' || q.type === 'checkbox') {
-					tipo = 'opcion_unica';
-				} else if (q.type === 'rating') {
-					tipo = 'numerica';
-				}
-
-				return {
+				const pregunta: any = {
 					texto: q.text,
 					tipo,
-					opciones:
-						q.type === 'multiple-choice' || q.type === 'checkbox'
-							? q.options
-							: undefined,
-					rango: q.type === 'rating' ? { min: 0, max: 5 } : undefined,
-					requerida: q.required,
-					orden: index + 1,
 				};
+
+				// Solo agregar campos opcionales si son necesarios para el tipo
+				if (tipo === 'opcion_unica' && q.options && q.options.length > 0) {
+					pregunta.opciones = q.options;
+				}
+
+				if ((tipo === 'numerica' || tipo === 'estrellas') && q.rango) {
+					pregunta.rango = q.rango;
+				}
+
+				return pregunta;
 			});
 			if (id) {
 				// Actualizar encuesta existente
@@ -158,6 +160,7 @@ export default function SurveyEditorScreen() {
 					descripcion,
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
+					estado,
 				});
 				toast.success('Encuesta actualizada exitosamente');
 			} else {
@@ -175,6 +178,7 @@ export default function SurveyEditorScreen() {
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
 					empresa_id: usuario.empresa.id,
+					estado,
 					preguntas: preguntasAPI,
 				});
 
@@ -184,6 +188,7 @@ export default function SurveyEditorScreen() {
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
 					empresa_id: usuario.empresa.id,
+					estado,
 					preguntas: preguntasAPI,
 				});
 				toast.success('Encuesta creada exitosamente');
@@ -293,6 +298,32 @@ export default function SurveyEditorScreen() {
 											onChange={(e) => setFechaFin(e.target.value)}
 										/>
 									</div>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="estado">Estado de la Encuesta</Label>
+									<Select
+										value={estado}
+										onValueChange={(value: any) => setEstado(value)}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Selecciona el estado" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="borrador">📝 Borrador</SelectItem>
+											<SelectItem value="publicada">✅ Publicada</SelectItem>
+											<SelectItem value="inactiva">⏸️ Inactiva</SelectItem>
+											<SelectItem value="archivada">📦 Archivada</SelectItem>
+										</SelectContent>
+									</Select>
+									<p className="text-sm text-slate-500">
+										{estado === 'borrador' &&
+											'La encuesta no será visible públicamente'}
+										{estado === 'publicada' &&
+											'La encuesta estará disponible para responder'}
+										{estado === 'inactiva' &&
+											'La encuesta no aceptará nuevas respuestas'}
+										{estado === 'archivada' && 'La encuesta está archivada'}
+									</p>
 								</div>
 							</CardContent>
 						</Card>
