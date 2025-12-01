@@ -1,6 +1,7 @@
 import {
 	BarChart3,
 	ChartBar,
+	Check,
 	Copy,
 	Edit,
 	FileText,
@@ -9,7 +10,6 @@ import {
 	LogOut,
 	MessageSquare,
 	Plus,
-	QrCode,
 	Settings,
 	Trash2,
 	Users,
@@ -28,6 +28,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -41,12 +42,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from './ui/dialog';
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import {
@@ -89,6 +84,12 @@ export default function DashboardScreen() {
 		rol_id: '',
 	});
 	const [isSavingUser, setIsSavingUser] = useState(false);
+
+	// Estados para el diálogo de enlace público
+	const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+	const [selectedEncuestaLink, setSelectedEncuestaLink] = useState('');
+	const [selectedEncuestaTitulo, setSelectedEncuestaTitulo] = useState('');
+	const [linkCopied, setLinkCopied] = useState(false);
 
 	// Cargar roles al montar el componente
 	useEffect(() => {
@@ -138,10 +139,27 @@ export default function DashboardScreen() {
 		}
 	};
 
-	const handleCopyLink = (urlPublica: string) => {
-		const fullUrl = `${window.location.origin}${urlPublica}`;
-		navigator.clipboard.writeText(fullUrl);
-		toast.success('Enlace copiado al portapapeles');
+	const handleCopyLink = (urlPublica: string, titulo: string) => {
+		// Si la URL ya es absoluta (comienza con http), usarla directamente
+		// Si no, construirla con el origin actual
+		const fullUrl = urlPublica.startsWith('http')
+			? urlPublica
+			: `${window.location.origin}${urlPublica}`;
+		setSelectedEncuestaLink(fullUrl);
+		setSelectedEncuestaTitulo(titulo);
+		setIsLinkDialogOpen(true);
+		setLinkCopied(false);
+	};
+
+	const handleCopyToClipboard = async () => {
+		try {
+			await navigator.clipboard.writeText(selectedEncuestaLink);
+			setLinkCopied(true);
+			toast.success('Enlace copiado al portapapeles');
+			setTimeout(() => setLinkCopied(false), 3000);
+		} catch (error) {
+			toast.error('Error al copiar el enlace');
+		}
 	};
 
 	// Funciones para gestión de usuarios
@@ -401,75 +419,38 @@ export default function DashboardScreen() {
 							encuestas.map((encuesta) => (
 								<Card key={encuesta.id_encuesta}>
 									<CardHeader>
-										<div className="flex items-start justify-between">
-											<div className="flex-1">
-												<div className="flex items-center gap-3 mb-2">
-													<CardTitle>{encuesta.titulo}</CardTitle>
-													<Badge
-														variant={
-															encuesta.estado === 'publicada'
-																? 'default'
-																: 'secondary'
-														}
-													>
-														{encuesta.estado}
-													</Badge>
-												</div>
-												<CardDescription>
-													Creada:{' '}
-													{new Date(encuesta.created_at).toLocaleDateString()} •
-													Expira:{' '}
-													{new Date(encuesta.fecha_fin).toLocaleDateString()}
-												</CardDescription>
+										<div className="flex-1">
+											<div className="flex items-center gap-3 mb-2">
+												<CardTitle>{encuesta.titulo}</CardTitle>
+												<Badge
+													variant={
+														encuesta.estado === 'publicada'
+															? 'default'
+															: 'secondary'
+													}
+												>
+													{encuesta.estado}
+												</Badge>
 											</div>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button variant="outline" size="sm">
-														Opciones
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													<DropdownMenuItem
-														onClick={() =>
-															handleEditSurvey(encuesta.id_encuesta)
-														}
-													>
-														<Edit className="w-4 h-4 mr-2" />
-														Editar
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														onClick={() =>
-															handleDuplicateSurvey(encuesta.id_encuesta)
-														}
-													>
-														<Copy className="w-4 h-4 mr-2" />
-														Duplicar
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														onClick={() => handleCopyLink(encuesta.url_publica)}
-													>
-														<Link className="w-4 h-4 mr-2" />
-														Copiar Enlace
-													</DropdownMenuItem>
-													<DropdownMenuItem>
-														<QrCode className="w-4 h-4 mr-2" />
-														Generar QR
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className="text-red-600"
-														onClick={() =>
-															handleDeleteSurvey(
-																encuesta.id_encuesta,
-																encuesta.titulo
-															)
-														}
-													>
-														<Trash2 className="w-4 h-4 mr-2" />
-														Eliminar
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+											<CardDescription>
+												Creada:{' '}
+												{new Date(encuesta.created_at).toLocaleDateString()} •
+												Expira:{' '}
+												{new Date(encuesta.fecha_fin).toLocaleDateString()}
+											</CardDescription>
 										</div>
+										<CardAction>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() =>
+													handleCopyLink(encuesta.url_publica, encuesta.titulo)
+												}
+											>
+												<Link className="w-4 h-4 mr-2" />
+												Copiar Enlace
+											</Button>
+										</CardAction>
 									</CardHeader>
 									<CardContent>
 										<div className="flex gap-2">
@@ -481,13 +462,27 @@ export default function DashboardScreen() {
 												<Edit className="w-4 h-4 mr-2" />
 												Editar
 											</Button>
-											<Button variant="outline" size="sm">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => navigate('/reportes')}
+											>
 												<BarChart3 className="w-4 h-4 mr-2" />
 												Ver Resultados
 											</Button>
-											<Button variant="outline" size="sm">
-												<QrCode className="w-4 h-4 mr-2" />
-												QR Code
+											<Button
+												variant="outline"
+												size="sm"
+												className="text-red-600 hover:text-red-700"
+												onClick={() =>
+													handleDeleteSurvey(
+														encuesta.id_encuesta,
+														encuesta.titulo
+													)
+												}
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Eliminar
 											</Button>
 										</div>
 									</CardContent>
@@ -670,6 +665,75 @@ export default function DashboardScreen() {
 							) : (
 								<>{editingUserId ? 'Actualizar' : 'Crear'} Usuario</>
 							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Diálogo para Enlace Público */}
+			<Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+				<DialogContent className="sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>Enlace Público de la Encuesta</DialogTitle>
+						<DialogDescription>
+							Comparte este enlace para que las personas puedan responder:{' '}
+							<strong>{selectedEncuestaTitulo}</strong>
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-4 py-4">
+						<div className="flex items-center gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+							<div className="flex-1 overflow-hidden">
+								<p className="text-sm text-slate-600 mb-1">
+									URL de la encuesta:
+								</p>
+								<p className="text-sm font-mono break-all text-blue-600">
+									{selectedEncuestaLink}
+								</p>
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleCopyToClipboard}
+								className="shrink-0"
+							>
+								{linkCopied ? (
+									<>
+										<Check className="w-4 h-4 mr-2 text-green-600" />
+										Copiado
+									</>
+								) : (
+									<>
+										<Copy className="w-4 h-4 mr-2" />
+										Copiar
+									</>
+								)}
+							</Button>
+						</div>
+
+						<div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+							<MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
+							<div className="text-sm text-blue-900">
+								<p className="font-medium mb-1">¿Cómo usar este enlace?</p>
+								<ul className="list-disc list-inside space-y-1 text-blue-800">
+									<li>Compártelo por correo, WhatsApp o redes sociales</li>
+									<li>No requiere inicio de sesión para responder</li>
+									<li>Las respuestas se guardarán automáticamente</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setIsLinkDialogOpen(false)}
+						>
+							Cerrar
+						</Button>
+						<Button onClick={handleCopyToClipboard}>
+							<Copy className="w-4 h-4 mr-2" />
+							Copiar Enlace
 						</Button>
 					</DialogFooter>
 				</DialogContent>

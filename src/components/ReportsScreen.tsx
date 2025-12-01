@@ -52,6 +52,9 @@ export default function ReportsScreen() {
 			: undefined
 	);
 
+	// Debug: ver qué datos estamos recibiendo
+	console.log('Estadísticas recibidas:', estadisticas);
+
 	const handleExportExcel = async () => {
 		try {
 			const blob = await reportesService.exportarExcel(
@@ -84,6 +87,8 @@ export default function ReportsScreen() {
 
 	const encuestaActual =
 		estadisticas && estadisticas.length > 0 ? estadisticas[0] : null;
+
+	console.log('Encuesta actual:', encuestaActual);
 
 	return (
 		<div className="min-h-screen bg-slate-50">
@@ -233,51 +238,63 @@ export default function ReportsScreen() {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-8">
-									{encuestaActual.preguntas.map((pregunta, index) => (
-										<div key={pregunta.pregunta_id}>
-											<h3 className="mb-4">
-												{index + 1}. {pregunta.pregunta_texto}
-											</h3>
-											<Table>
-												<TableHeader>
-													<TableRow>
-														<TableHead>Opción</TableHead>
-														<TableHead>Respuestas</TableHead>
-														<TableHead>Porcentaje</TableHead>
-														<TableHead>Visualización</TableHead>
-													</TableRow>
-												</TableHeader>
-												<TableBody>
-													{pregunta.respuestas.map((resp, respIndex) => (
-														<TableRow key={respIndex}>
-															<TableCell>
-																<div className="flex items-center gap-2">
-																	<div
-																		className="w-3 h-3 rounded-full"
-																		style={{
-																			backgroundColor:
-																				COLORS[respIndex % COLORS.length],
-																		}}
-																	/>
-																	{resp.valor}
-																</div>
-															</TableCell>
-															<TableCell>{resp.frecuencia}</TableCell>
-															<TableCell>
-																{resp.porcentaje.toFixed(1)}%
-															</TableCell>
-															<TableCell className="w-1/3">
-																<Progress value={resp.porcentaje} />
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-											{index < encuestaActual.preguntas.length - 1 && (
-												<Separator className="mt-8" />
-											)}
-										</div>
-									))}
+									{encuestaActual.preguntas.map((pregunta, index) => {
+										console.log(`Pregunta ${index + 1}:`, pregunta);
+										return (
+											<div key={pregunta.pregunta_id}>
+												<h3 className="mb-4">
+													{index + 1}. {pregunta.pregunta_texto}
+												</h3>
+
+												{pregunta.respuestas &&
+												pregunta.respuestas.length > 0 ? (
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Opción</TableHead>
+																<TableHead>Respuestas</TableHead>
+																<TableHead>Porcentaje</TableHead>
+																<TableHead>Visualización</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{pregunta.respuestas.map((resp, respIndex) => (
+																<TableRow key={respIndex}>
+																	<TableCell>
+																		<div className="flex items-center gap-2">
+																			<div
+																				className="w-3 h-3 rounded-full"
+																				style={{
+																					backgroundColor:
+																						COLORS[respIndex % COLORS.length],
+																				}}
+																			/>
+																			{resp.valor}
+																		</div>
+																	</TableCell>
+																	<TableCell>{resp.frecuencia}</TableCell>
+																	<TableCell>
+																		{resp.porcentaje.toFixed(1)}%
+																	</TableCell>
+																	<TableCell className="w-1/3">
+																		<Progress value={resp.porcentaje} />
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												) : (
+													<p className="text-slate-500 italic">
+														No hay respuestas para esta pregunta
+													</p>
+												)}
+
+												{index < encuestaActual.preguntas.length - 1 && (
+													<Separator className="mt-8" />
+												)}
+											</div>
+										);
+									})}
 								</div>
 							</CardContent>
 						</Card>

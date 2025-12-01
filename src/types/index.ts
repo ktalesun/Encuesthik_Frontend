@@ -41,6 +41,14 @@ export type TipoPregunta =
 	| 'numerica'
 	| 'estrellas';
 
+export const TIPOS_PREGUNTA_LABELS: Record<TipoPregunta, string> = {
+	texto: 'Texto Libre',
+	opcion_unica: 'Opción Única',
+	si_no: 'Sí/No',
+	numerica: 'Escala Numérica',
+	estrellas: 'Calificación con Estrellas',
+};
+
 export interface Pregunta {
 	id_pregunta: string;
 	texto: string;
@@ -90,7 +98,7 @@ export interface DatosTercero {
 export interface Respuesta {
 	id_respuesta: string;
 	encuesta_id: string;
-	respuestas_json: RespuestaItem[];
+	respuestas_json: Record<string, any>; // Objeto con pregunta_id como clave
 	datos_tercero?: DatosTercero;
 	created_at: string;
 }
@@ -217,8 +225,8 @@ export interface UpdateEncuestaRequest {
 
 export interface CreateRespuestaRequest {
 	encuesta_id: string;
-	respuestas: RespuestaItem[];
-	terceros?: DatosTercero;
+	respuestas_json: Record<string, any>; // Objeto con pregunta_id como clave
+	datos_tercero?: DatosTercero;
 }
 
 // ==========================================

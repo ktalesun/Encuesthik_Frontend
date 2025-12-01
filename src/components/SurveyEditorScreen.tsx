@@ -65,20 +65,11 @@ export default function SurveyEditorScreen() {
 			if (encuesta.preguntas) {
 				const mappedQuestions = encuesta.preguntas.map((p) => ({
 					id: p.id_pregunta,
-					type:
-						p.tipo === 'opcion_unica'
-							? 'multiple-choice'
-							: p.tipo === 'texto'
-								? 'text'
-								: p.tipo === 'numerica'
-									? 'rating'
-									: p.tipo === 'estrellas'
-										? 'rating'
-										: 'text',
+					type: p.tipo, // Usar directamente el tipo del backend
 					text: p.texto,
 					required: p.requerida,
 					options: p.opciones || [],
-					rango: p.rango,
+					rango: p.rango || { min: 1, max: 5 },
 					orden: p.orden,
 				}));
 				setQuestions(mappedQuestions);
@@ -88,10 +79,11 @@ export default function SurveyEditorScreen() {
 
 	const addQuestion = () => {
 		const newQuestion: Question = {
-			type: 'multiple-choice',
+			type: 'texto',
 			text: 'Nueva pregunta',
 			required: false,
-			options: ['Opción 1', 'Opción 2'],
+			options: [],
+			rango: { min: 1, max: 5 },
 			orden: questions.length + 1,
 		};
 		setQuestions([...questions, newQuestion]);
@@ -353,24 +345,22 @@ export default function SurveyEditorScreen() {
 													<SelectValue />
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="multiple-choice">
-														Opción Múltiple
+													<SelectItem value="texto">Texto Libre</SelectItem>
+													<SelectItem value="opcion_unica">
+														Opción Única
 													</SelectItem>
-													<SelectItem value="checkbox">
-														Casillas de Verificación
+													<SelectItem value="si_no">Sí/No</SelectItem>
+													<SelectItem value="numerica">
+														Escala Numérica
 													</SelectItem>
-													<SelectItem value="text">Texto Corto</SelectItem>
-													<SelectItem value="paragraph">Párrafo</SelectItem>
-													<SelectItem value="rating">
-														Escala de Valoración
+													<SelectItem value="estrellas">
+														Calificación con Estrellas
 													</SelectItem>
-													<SelectItem value="date">Fecha</SelectItem>
 												</SelectContent>
 											</Select>
 										</div>
 
-										{(question.type === 'multiple-choice' ||
-											question.type === 'checkbox') && (
+										{question.type === 'opcion_unica' && (
 											<div className="space-y-2">
 												<Label>Opciones de Respuesta</Label>
 												{question.options.map((option, optIndex) => (
@@ -403,6 +393,49 @@ export default function SurveyEditorScreen() {
 													<Plus className="w-4 h-4 mr-2" />
 													Agregar Opción
 												</Button>
+											</div>
+										)}
+
+										{(question.type === 'numerica' ||
+											question.type === 'estrellas') && (
+											<div className="space-y-2">
+												<Label>Rango de Calificación</Label>
+												<div className="grid grid-cols-2 gap-4">
+													<div className="space-y-2">
+														<Label>Mínimo</Label>
+														<Input
+															type="number"
+															value={question.rango?.min || 0}
+															onChange={(e) => {
+																const newRango = {
+																	...question.rango,
+																	min: Number(e.target.value),
+																	max: question.rango?.max || 5,
+																};
+																updateQuestion(index, 'rango', newRango);
+															}}
+														/>
+													</div>
+													<div className="space-y-2">
+														<Label>Máximo</Label>
+														<Input
+															type="number"
+															value={question.rango?.max || 5}
+															onChange={(e) => {
+																const newRango = {
+																	min: question.rango?.min || 0,
+																	max: Number(e.target.value),
+																};
+																updateQuestion(index, 'rango', newRango);
+															}}
+														/>
+													</div>
+												</div>
+												<p className="text-sm text-slate-500">
+													{question.type === 'estrellas'
+														? 'Número de estrellas a mostrar (ej: 0-5 o 1-5)'
+														: 'Rango de valores permitidos (ej: 0-10 para NPS)'}
+												</p>
 											</div>
 										)}
 

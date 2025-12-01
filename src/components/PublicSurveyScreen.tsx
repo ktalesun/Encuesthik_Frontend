@@ -1,10 +1,16 @@
-import { AlertCircle, ChartBar, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+	AlertCircle,
+	ChartBar,
+	CheckCircle2,
+	Loader2,
+	Star,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import encuestasService from '../services/encuestas.service';
 import respuestasService from '../services/respuestas.service';
-import { Encuesta, RespuestaItem } from '../types';
+import { Encuesta } from '../types';
 import { Button } from './ui/button';
 import {
 	Card,
@@ -80,18 +86,23 @@ export default function PublicSurveyScreen() {
 		try {
 			setIsSubmitting(true);
 
-			const respuestasArray: RespuestaItem[] = Object.entries(respuestas).map(
-				([pregunta_id, respuesta]) => ({
-					pregunta_id,
-					respuesta,
-				})
-			);
-
-			await respuestasService.enviar({
-				encuesta_id: encuesta.id_encuesta,
-				respuestas: respuestasArray,
-				terceros: terceros.nombre || terceros.email ? terceros : undefined,
+			// Convertir respuestas a objeto con pregunta_id como clave
+			const respuestasJSON: Record<string, any> = {};
+			Object.entries(respuestas).forEach(([pregunta_id, respuesta]) => {
+				respuestasJSON[pregunta_id] = respuesta;
 			});
+
+			const payload: any = {
+				encuesta_id: encuesta.id_encuesta,
+				respuestas_json: respuestasJSON,
+			};
+
+			// Solo incluir datos_tercero si hay información
+			if (terceros.nombre || terceros.email) {
+				payload.datos_tercero = terceros;
+			}
+
+			await respuestasService.enviar(payload);
 
 			setIsSubmitted(true);
 			toast.success('¡Respuesta enviada exitosamente!');
@@ -290,6 +301,33 @@ export default function PublicSurveyScreen() {
 											}
 											placeholder={`Entre ${pregunta.rango?.min} y ${pregunta.rango?.max}`}
 										/>
+									)}
+
+									{/* Pregunta de estrellas */}
+									{pregunta.tipo === 'estrellas' && (
+										<div className="flex gap-2">
+											{Array.from(
+												{ length: pregunta.rango?.max || 5 },
+												(_, i) => i + 1
+											).map((star) => (
+												<button
+													key={star}
+													type="button"
+													onClick={() =>
+														handleRespuestaChange(pregunta.id_pregunta, star)
+													}
+													className="focus:outline-none transition-transform hover:scale-110"
+												>
+													<Star
+														className={`w-8 h-8 ${
+															respuestas[pregunta.id_pregunta] >= star
+																? 'fill-yellow-400 text-yellow-400'
+																: 'text-gray-300'
+														}`}
+													/>
+												</button>
+											))}
+										</div>
 									)}
 								</div>
 							))}
