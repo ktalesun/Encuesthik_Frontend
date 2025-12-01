@@ -3,7 +3,6 @@ import {
 	Eye,
 	GripVertical,
 	Loader2,
-	MessageSquare,
 	Plus,
 	Save,
 	Trash2,
@@ -494,30 +493,6 @@ export default function SurveyEditorScreen() {
 
 					{/* Sidebar */}
 					<div className="space-y-6">
-						{/* WhatsApp Integration */}
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<MessageSquare className="w-5 h-5 text-green-600" />
-									Integración WhatsApp
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<div className="flex items-center justify-between">
-									<Label>Habilitar WhatsApp</Label>
-									<Switch />
-								</div>
-								<Separator />
-								<div className="space-y-2">
-									<Label>Número de WhatsApp Business</Label>
-									<Input placeholder="+1 234 567 8900" />
-								</div>
-								<p className="text-slate-600 text-sm">
-									Las respuestas enviadas por WhatsApp se integrarán
-									automáticamente con la base de datos
-								</p>
-							</CardContent>
-						</Card>
 						{/* Quick Stats */}
 						<Card>
 							<CardHeader>

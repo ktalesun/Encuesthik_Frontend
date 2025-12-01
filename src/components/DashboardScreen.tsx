@@ -8,6 +8,7 @@ import {
 	Link,
 	Loader2,
 	LogOut,
+	MessageCircle,
 	MessageSquare,
 	Plus,
 	Trash2,
@@ -90,6 +91,12 @@ export default function DashboardScreen() {
 	const [selectedEncuestaTitulo, setSelectedEncuestaTitulo] = useState('');
 	const [linkCopied, setLinkCopied] = useState(false);
 
+	// Estados para WhatsApp
+	const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
+	const [whatsappNumber, setWhatsappNumber] = useState('');
+	const [whatsappEncuestaUrl, setWhatsappEncuestaUrl] = useState('');
+	const [whatsappEncuestaTitulo, setWhatsappEncuestaTitulo] = useState('');
+
 	// Cargar roles al montar el componente
 	useEffect(() => {
 		const fetchRoles = async () => {
@@ -159,6 +166,45 @@ export default function DashboardScreen() {
 		} catch (error) {
 			toast.error('Error al copiar el enlace');
 		}
+	};
+
+	const handleOpenWhatsApp = (urlPublica: string, titulo: string) => {
+		const fullUrl = urlPublica.startsWith('http')
+			? urlPublica
+			: `${window.location.origin}${urlPublica}`;
+		setWhatsappEncuestaUrl(fullUrl);
+		setWhatsappEncuestaTitulo(titulo);
+		setWhatsappNumber('');
+		setIsWhatsAppDialogOpen(true);
+	};
+
+	const handleSendWhatsApp = () => {
+		if (!whatsappNumber.trim()) {
+			toast.error('Por favor ingresa un número de teléfono');
+			return;
+		}
+
+		// Limpiar el número (remover espacios, guiones, paréntesis)
+		const telefonoLimpio = whatsappNumber.replace(/[^0-9]/g, '');
+
+		if (telefonoLimpio.length < 10) {
+			toast.error('Por favor ingresa un número válido (mínimo 10 dígitos)');
+			return;
+		}
+
+		// Crear mensaje personalizado
+		const mensaje = `Hola! 👋\n\nTe invitamos a participar en nuestra encuesta: *${whatsappEncuestaTitulo}*\n\n🔗 ${whatsappEncuestaUrl}\n\n¡Gracias por tu tiempo! 😊`;
+
+		// Crear URL de WhatsApp
+		const urlWhatsApp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+
+		// Abrir en nueva ventana
+		window.open(urlWhatsApp, '_blank');
+
+		// Cerrar modal y limpiar
+		setIsWhatsAppDialogOpen(false);
+		setWhatsappNumber('');
+		toast.success('Abriendo WhatsApp...');
 	};
 
 	// Funciones para gestión de usuarios
@@ -446,16 +492,35 @@ export default function DashboardScreen() {
 											</CardDescription>
 										</div>
 										<CardAction>
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() =>
-													handleCopyLink(encuesta.url_publica, encuesta.titulo)
-												}
-											>
-												<Link className="w-4 h-4 mr-2" />
-												Copiar Enlace
-											</Button>
+											<div className="flex gap-2">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() =>
+														handleCopyLink(
+															encuesta.url_publica,
+															encuesta.titulo
+														)
+													}
+												>
+													<Link className="w-4 h-4 mr-2" />
+													Copiar Enlace
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+													onClick={() =>
+														handleOpenWhatsApp(
+															encuesta.url_publica,
+															encuesta.titulo
+														)
+													}
+												>
+													<MessageCircle className="w-4 h-4 mr-2" />
+													WhatsApp
+												</Button>
+											</div>
 										</CardAction>
 									</CardHeader>
 									<CardContent>
@@ -740,6 +805,91 @@ export default function DashboardScreen() {
 						<Button onClick={handleCopyToClipboard}>
 							<Copy className="w-4 h-4 mr-2" />
 							Copiar Enlace
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Diálogo para enviar por WhatsApp */}
+			<Dialog
+				open={isWhatsAppDialogOpen}
+				onOpenChange={setIsWhatsAppDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<MessageCircle className="w-5 h-5 text-green-600" />
+							Enviar por WhatsApp
+						</DialogTitle>
+						<DialogDescription>
+							Ingresa el número de teléfono para enviar la encuesta:{' '}
+							<strong>{whatsappEncuestaTitulo}</strong>
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="whatsapp-number">
+								Número de WhatsApp (incluye código de país)
+							</Label>
+							<Input
+								id="whatsapp-number"
+								type="tel"
+								placeholder="Ej: 573001234567"
+								value={whatsappNumber}
+								onChange={(e) => setWhatsappNumber(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') {
+										handleSendWhatsApp();
+									}
+								}}
+							/>
+							<p className="text-xs text-slate-500">
+								Formato: código país + número (sin espacios ni guiones)
+								<br />
+								Ejemplo Colombia: 573001234567
+							</p>
+						</div>
+
+						<div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+							<p className="text-sm text-green-900 font-medium mb-2">
+								Vista previa del mensaje:
+							</p>
+							<div className="text-xs text-green-800 bg-white p-3 rounded border border-green-100 whitespace-pre-wrap">
+								Hola! 👋{'\n\n'}
+								Te invitamos a participar en nuestra encuesta: *
+								{whatsappEncuestaTitulo}*{'\n\n'}
+								🔗 {whatsappEncuestaUrl}
+								{'\n\n'}
+								¡Gracias por tu tiempo! 😊
+							</div>
+						</div>
+
+						<div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+							<MessageSquare className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+							<div className="text-xs text-blue-900">
+								<p className="font-medium mb-1">Nota importante:</p>
+								<p>
+									Se abrirá WhatsApp Web o la aplicación con el mensaje
+									pre-escrito. Solo necesitas hacer clic en "Enviar".
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setIsWhatsAppDialogOpen(false)}
+						>
+							Cancelar
+						</Button>
+						<Button
+							onClick={handleSendWhatsApp}
+							className="bg-green-600 hover:bg-green-700"
+						>
+							<MessageCircle className="w-4 h-4 mr-2" />
+							Abrir WhatsApp
 						</Button>
 					</DialogFooter>
 				</DialogContent>
