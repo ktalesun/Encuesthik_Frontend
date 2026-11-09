@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_URL: /api
+    container_name: sistema-encuestas-web
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    ports:
+      - '3000:80'
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    # La red la crea el backend; aquí solo nos unimos a ella.
+    external: true
