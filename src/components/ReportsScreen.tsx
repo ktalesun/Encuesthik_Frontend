@@ -250,7 +250,7 @@ export default function ReportsScreen() {
 							<h3 className="text-lg mb-2 text-red-600">
 								Error al cargar datos
 							</h3>
-							<p className="text-slate-600 mb-4">{error.message}</p>
+							<p className="text-slate-600 mb-4">{error}</p>
 							<Button onClick={() => refetch()}>
 								<RefreshCw className="h-4 w-4 mr-2" />
 								Reintentar
@@ -334,7 +334,7 @@ export default function ReportsScreen() {
 						{estadisticas.map((encuesta) => (
 							<div key={encuesta.encuesta_id} className="mb-8">
 								<h2 className="text-xl font-semibold mb-4">
-									{encuesta.encuesta_titulo}
+									{encuesta.titulo}
 								</h2>
 
 								{/* Tarjetas de resumen */}
@@ -372,7 +372,7 @@ export default function ReportsScreen() {
 										</CardHeader>
 										<CardContent>
 											<div className="text-lg font-semibold capitalize">
-												{encuesta.encuesta_estado || 'N/A'}
+												{'N/A'}
 											</div>
 											<p className="text-slate-600 mt-2 text-sm">Actual</p>
 										</CardContent>

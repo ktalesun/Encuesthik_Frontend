@@ -164,28 +164,17 @@ export default function SurveyEditorScreen() {
 				// Crear nueva encuesta
 				const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
 
-				if (!usuario.empresa?.id) {
+				if (!usuario.empresa?.id_empresa) {
 					toast.error('No se pudo obtener la información de la empresa');
 					return;
 				}
-
-				console.log('Creando encuesta con datos:', {
-					titulo,
-					descripcion,
-					fecha_inicio: fechaInicio,
-					fecha_fin: fechaFin,
-					empresa_id: usuario.empresa.id,
-					estado,
-					preguntas: preguntasAPI,
-				});
 
 				await encuestasService.crear({
 					titulo,
 					descripcion,
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
-					empresa_id: usuario.empresa.id,
-					estado,
+					empresa_id: usuario.empresa.id_empresa,
 					preguntas: preguntasAPI,
 				});
 				toast.success('Encuesta creada exitosamente');

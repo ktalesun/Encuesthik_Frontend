@@ -279,7 +279,7 @@ export default function DashboardScreen() {
 					email: userForm.email,
 					password: userForm.password,
 					rol_id: userForm.rol_id,
-					empresa_id: usuario?.empresa?.id || '',
+					empresa_id: usuario?.empresa?.id_empresa || '',
 				});
 				toast.success('Usuario creado exitosamente');
 			}
