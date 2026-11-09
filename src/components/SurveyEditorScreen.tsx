@@ -163,8 +163,9 @@ export default function SurveyEditorScreen() {
 			} else {
 				// Crear nueva encuesta
 				const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+				const empresaId = usuario.empresa?.id_empresa || usuario.empresa?.id || usuario.empresa_id;
 
-				if (!usuario.empresa?.id_empresa) {
+				if (!empresaId) {
 					toast.error('No se pudo obtener la información de la empresa');
 					return;
 				}
@@ -174,7 +175,7 @@ export default function SurveyEditorScreen() {
 					descripcion,
 					fecha_inicio: fechaInicio,
 					fecha_fin: fechaFin,
-					empresa_id: usuario.empresa.id_empresa,
+					empresa_id: empresaId,
 					preguntas: preguntasAPI,
 				});
 				toast.success('Encuesta creada exitosamente');

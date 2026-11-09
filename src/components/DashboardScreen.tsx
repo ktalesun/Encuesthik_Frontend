@@ -274,12 +274,17 @@ export default function DashboardScreen() {
 				toast.success('Usuario actualizado exitosamente');
 			} else {
 				// Crear nuevo usuario
+				const empresaId = usuario?.empresa?.id_empresa || usuario?.empresa?.id || usuario?.empresa_id;
+				if (!empresaId) {
+					toast.error('No se pudo obtener la información de la empresa');
+					return;
+				}
 				await usuariosService.crear({
 					nombre: userForm.nombre,
 					email: userForm.email,
 					password: userForm.password,
 					rol_id: userForm.rol_id,
-					empresa_id: usuario?.empresa?.id_empresa || '',
+					empresa_id: empresaId,
 				});
 				toast.success('Usuario creado exitosamente');
 			}

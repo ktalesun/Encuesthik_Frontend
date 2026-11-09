@@ -4,6 +4,7 @@
 
 export interface Empresa {
 	id_empresa: string;
+	id?: string;
 	nombre: string;
 	nit: string;
 	fecha_inicio: string;
