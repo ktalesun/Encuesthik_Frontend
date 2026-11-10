@@ -40,8 +40,8 @@ Sistema de gestión de encuestas empresariales construido con React, TypeScript,
 1. **Clonar el repositorio**
 
 ```bash
-git clone https://github.com/Camilodev61/Encuesthik_Fronted.git
-cd Encuesthik_Fronted
+git clone https://github.com/ktalesun/Encuesthik_Frontend.git
+cd Encuesthik_Frontend
 ```
 
 2. **Instalar dependencias**
