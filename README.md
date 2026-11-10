@@ -66,6 +66,45 @@ pnpm dev
 
 La aplicación estará disponible en `http://localhost:3000`
 
+## 🐳 Docker
+
+El frontend se empaqueta con un Dockerfile multi-stage: compila con Vite (`node:20-alpine`) y sirve el resultado con Nginx (`nginx:1.27-alpine`). Nginx también actúa como proxy inverso: el navegador llama a `/api/*` y Nginx lo reenvía a `http://backend:3001` usando el **nombre del servicio** dentro de la red de Docker.
+
+### Requisitos
+
+El compose del frontend se une a la red externa `app-network`, que crea el compose del backend (repositorio `sistema-encuestas-back`). Por eso **el backend debe estar levantado primero**:
+
+```bash
+# En el repositorio del backend
+cp .env.prod.example .env.prod      # y editar las contraseñas
+docker compose up -d --build
+```
+
+### Levantar el frontend
+
+```bash
+# 1. Crear el archivo de variables (NO se sube al repositorio)
+cp .env.prod.example .env.prod      # BACKEND_URL=http://backend:3001
+
+# 2. Construir la imagen y levantar el contenedor
+docker compose up -d --build
+
+# 3. Verificar
+docker compose ps
+```
+
+La aplicación queda disponible en `http://localhost:3000`.
+
+### Detener
+
+```bash
+docker compose down
+```
+
+### Integración continua
+
+El workflow `.github/workflows/docker-build.yml` construye la imagen en cada *push* y *pull request*.
+
 ## 🔐 Autenticación
 
 ### Credenciales de Prueba
